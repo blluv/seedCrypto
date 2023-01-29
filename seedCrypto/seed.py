@@ -72,3 +72,26 @@ def SeedDecrypt(roundKey: typing.List[int], inputData: bytes):
         [L1, R1] = [R1, L1]
 
     return struct.pack(">IIII", R0 & 0xffffffff, R1 & 0xffffffff, L0 & 0xffffffff, L1 & 0xffffffff)
+
+
+def SeedCBCDecrypt(roundKey, iv, data):
+    assert len(data) % 16 == 0
+
+    for i in range(len(data)//16):
+        out = SeedDecrypt(roundKey, data[i*16:i*16+16])
+        plain = bytes(map(lambda v: v[0] ^ v[1], zip(iv, out)))
+        iv = data[i*16:i*16+16]
+
+        yield plain
+
+
+def SeedCBCEncrypt(roundKey, iv, data):
+    assert len(data) % 16 == 0
+
+    for i in range(len(data)//16):
+        plainXor = bytes(
+            map(lambda v: v[0] ^ v[1], zip(iv, data[i*16:i*16+16])))
+        cipher = SeedEncrypt(roundKey, plainXor)
+        iv = cipher
+
+        yield cipher
